@@ -18,22 +18,19 @@ class Scheme:
     def __init__(self,algorithm):
         self.algorithm = algorithm
 
-    # def iter_img(self,func):
-    #     def the_wrapper_func():
+    # def iter_img(func):
+    #     def the_wrapper_func(self,img):
     #         code = np.zeros((height, width), dtype=np.float64)
     #         for i in range(0,self.height,2):
-    #             line_x = iter(self.img[i])
-    #             line_y = iter(self.img[i+1])
+    #             line_x = iter(img[i])
+    #             line_y = iter(img[i+1])
     #             # print(i)
     #             for j in range(width):
     #                 x = next(line_x)
     #                 y = next(line_y)
-    #                 code[i][j], code[i+1][j] = self.algorithm.code(x,y,i,j)  
+    #                 code[i][j], code[i+1][j] = func(self,x,y,i,j)  
     #         return code
-
-    #         func()
     #     return the_wrapper_func
-
 
     def code(self,img):
         code = np.zeros((self.algorithm.height, self.algorithm.width), dtype=np.float64)

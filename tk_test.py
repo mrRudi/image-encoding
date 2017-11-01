@@ -1,5 +1,5 @@
 from tkinter.filedialog import askopenfilename
-from tkinter import Tk,Label,Button,Entry,W,Radiobutton,IntVar,E,Toplevel
+from tkinter import Tk,Label,Button,Entry,W,Radiobutton,IntVar,E,Toplevel,StringVar
 from PIL import Image
 from PIL import ImageTk
 import cv2
@@ -14,8 +14,13 @@ class GUI():
         self.master = master
 
 		#вибір зображення
+        Label(self.master, text="вибране зображення:").grid(row=0,column=0, sticky=W+E)
+        self.path_label = StringVar()
+        Label(self.master, textvariable=self.path_label).grid(row=0,column=1,columnspan=2, sticky=W+E)
+        self.path_label.set('не вибрано')
         self.btn_select_img = Button(self.master, text="Вибрати зображення", command=self.select_image)
-        self.btn_select_img.grid(row=0, column=0, columnspan=4, sticky=W+E)
+        self.btn_select_img.grid(row=0, column=3, sticky=W+E)
+        
 
 		#коефіціенти RSA
         Label(self.master, text="p =").grid(row=1,column=0, sticky=W+E)
@@ -46,9 +51,12 @@ class GUI():
         self.method = IntVar()
         self.r1 = Radiobutton(self.master,text="метод №1",padx = 20,variable=self.method,value=1).grid(row=4,column=0,sticky=W+E)
         self.r2 = Radiobutton(self.master,text="метод №2",padx = 20,variable=self.method,value=2).grid(row=4,column=1,sticky=W+E)
-
-		#обробка зображень
-        Button(self.master, text='запустити', command=self.create_window).grid(row=3, column=2, columnspan=2, sticky=W+E, pady=4)
+        
+        #зміна розміру зображення
+        Button(self.master, text='зміна розміру', command=self.resize).grid(row=3, column=2, sticky=W+E, pady=4)
+		
+        #обробка зображень
+        Button(self.master, text='запустити', command=self.create_windows).grid(row=3, column=3, sticky=W+E, pady=4)
 	
     def save_RSA(self):
         self.rsa = Rsa(int(self.p.get()),int(self.q.get()),int(self.e.get()),int(self.d.get()))
@@ -56,8 +64,13 @@ class GUI():
     def select_image(self):
         self.path_img = askopenfilename()
         self.img = cv2.imread(self.path_img,0)
+        self.img_resize = self.img.copy()
+        self.path_label.set(self.path_img)
 
     def select_algorithm(self):
+        self.height,self.width = self.img_resize.shape[:2]
+        if self.height % 2 == 1:
+            self.height -= 1
         if self.method.get() == 1:
         	self.algorithm = Algorithm_first(self.rsa,self.height,self.width)
         elif self.method.get() == 2:
@@ -66,17 +79,12 @@ class GUI():
     def resize(self):
         coefficient_size = float(self.coefficient_size_img.get())
         height,width = self.img.shape[:2]
-        self.img = cv2.resize(self.img,(int(width*coefficient_size), int(height*coefficient_size)), interpolation = cv2.INTER_CUBIC)
-        self.height,self.width = self.img.shape[:2]
+        self.img_resize = cv2.resize(self.img,(int(width*coefficient_size), int(height*coefficient_size)), interpolation = cv2.INTER_AREA)
 
-    def update(self):
+    def create_windows(self):
         self.save_RSA()
-        self.resize()
         self.select_algorithm()
-
-    def create_window(self):
-        self.update()
-        base = self.img.copy().astype(np.float64)
+        base = self.img_resize.copy().astype(np.float64)
 
         scheme = Scheme(self.algorithm)
 
