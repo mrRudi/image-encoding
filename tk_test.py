@@ -57,8 +57,8 @@ class GUI():
         # Button(self.master, text='зміна розміру', command=self.resize).grid(row=3, column=2, sticky=W+E, pady=4)
 		
         #обробка зображень
-        Button(self.master, text='запустити', command=self.create_windows).grid(row=3, column=3, sticky=W+E, pady=4)
-	
+        self.create_button(self.master, self.create_windows, "play.png",40,3,3)
+
     def save_RSA(self):
         self.rsa = Rsa(int(self.p.get()),int(self.q.get()),int(self.e.get()),int(self.d.get()))
 
@@ -98,11 +98,19 @@ class GUI():
         
         for number, picture in enumerate(db_pictures.pictures):
             Label(window, text="%s"%picture.title).grid(row=number,column=0, sticky=W+E)
-            Button(window, text='відобразити', command=partial(self.show_picture, picture.title, picture.display,window)).grid(row=number, column=1, sticky=W+E, pady=4)
-            Button(window, text='зберегти', command=partial(self.save_img, picture.title, picture.image)).grid(row=number, column=2, sticky=W+E, pady=4)
+            self.create_button(window, partial(self.show_picture, picture.title, picture.display,window), "show.png",40,number,1)
+            self.create_button(window, partial(self.save_img, picture.title, picture.image), "save.png",40,number,2)
         
-        Button(window, text='відобразити все', command=partial(self.show_all_pictures, db_pictures.pictures,window)).grid(row=0, column=3, sticky=W+E, pady=4)
-        Button(window, text='зберегти все', command=partial(self.save_all_images, db_pictures.pictures)).grid(row=1, column=3, sticky=W+E, pady=4)
+        self.create_button(window, partial(self.show_all_pictures, db_pictures.pictures,window), "show-all.png",40,0,3)
+        self.create_button(window, partial(self.save_all_images, db_pictures.pictures), "save-all.png",40,1,3)
+        
+    def create_button(self, master,comand,path_image,size,row,column):
+        b = Button(master, command=comand)
+        image = ImageTk.PhotoImage(Image.open(path_image).resize((size,size),Image.ANTIALIAS))
+        b.config(image=image)
+        b.image = image
+        b.grid(row=row, column=column)
+
 
     def save_img(self, title, image):
         image_uint8 = image.astype(np.uint8)
