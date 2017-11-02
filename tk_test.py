@@ -1,10 +1,12 @@
 from tkinter.filedialog import askopenfilename
-from tkinter import Tk,Label,Button,Entry,W,Radiobutton,IntVar,E,Toplevel,StringVar
+from tkinter import Tk,Label,Button,Entry,W,Radiobutton,IntVar,E,Toplevel,StringVar,PhotoImage
+import numpy as np
+import cv2
+from builder import Algorithm_first,Algorithm_second,Rsa,Scale
+from db import Db_pictures
+from functools import partial
 from PIL import Image
 from PIL import ImageTk
-import cv2
-from builder import Algorithm_first,Algorithm_second,Rsa,Scheme
-import numpy as np
 
 
 class GUI():
@@ -20,7 +22,6 @@ class GUI():
         self.path_label.set('не вибрано')
         self.btn_select_img = Button(self.master, text="Вибрати зображення", command=self.select_image)
         self.btn_select_img.grid(row=0, column=3, sticky=W+E)
-        
 
 		#коефіціенти RSA
         Label(self.master, text="p =").grid(row=1,column=0, sticky=W+E)
@@ -49,11 +50,11 @@ class GUI():
 
 		#вибір алгоритму шифрування
         self.method = IntVar()
-        self.r1 = Radiobutton(self.master,text="метод №1",padx = 20,variable=self.method,value=1).grid(row=4,column=0,sticky=W+E)
-        self.r2 = Radiobutton(self.master,text="метод №2",padx = 20,variable=self.method,value=2).grid(row=4,column=1,sticky=W+E)
+        Radiobutton(self.master,text="метод №1",padx = 20,variable=self.method,value=1).grid(row=4,column=0,sticky=W+E)
+        Radiobutton(self.master,text="метод №2",padx = 20,variable=self.method,value=2).grid(row=4,column=1,sticky=W+E)
         
         #зміна розміру зображення
-        Button(self.master, text='зміна розміру', command=self.resize).grid(row=3, column=2, sticky=W+E, pady=4)
+        # Button(self.master, text='зміна розміру', command=self.resize).grid(row=3, column=2, sticky=W+E, pady=4)
 		
         #обробка зображень
         Button(self.master, text='запустити', command=self.create_windows).grid(row=3, column=3, sticky=W+E, pady=4)
@@ -64,52 +65,71 @@ class GUI():
     def select_image(self):
         self.path_img = askopenfilename()
         self.img = cv2.imread(self.path_img,0)
-        self.img_resize = self.img.copy()
         self.path_label.set(self.path_img)
 
     def select_algorithm(self):
-        self.height,self.width = self.img_resize.shape[:2]
-        if self.height % 2 == 1:
-            self.height -= 1
-        if self.method.get() == 1:
-        	self.algorithm = Algorithm_first(self.rsa,self.height,self.width)
-        elif self.method.get() == 2:
-            self.algorithm = Algorithm_second(self.rsa,self.height,self.width)
+        height, width = self.img_resize.shape[:2]
+        self.select_method = self.method.get()
+        if self.select_method == 1:
+        	self.algorithm = Algorithm_first(self.rsa,height=height,width=width)
+        elif self.select_method == 2:
+            self.algorithm = Algorithm_second(self.rsa,height=height,width=width)
 
     def resize(self):
-        coefficient_size = float(self.coefficient_size_img.get())
-        height,width = self.img.shape[:2]
-        self.img_resize = cv2.resize(self.img,(int(width*coefficient_size), int(height*coefficient_size)), interpolation = cv2.INTER_AREA)
+        self.img_resize = self.img.copy()
+        coefficient_size = self.coefficient_size_img.get()
+        if coefficient_size:
+            coefficient_size = float(coefficient_size)
+            height,width = self.img.shape[:2]
+            self.img_resize = cv2.resize(self.img,(int(width*coefficient_size), int(height*coefficient_size)), interpolation = cv2.INTER_AREA)
 
     def create_windows(self):
+        self.resize()
         self.save_RSA()
         self.select_algorithm()
-        base = self.img_resize.copy().astype(np.float64)
 
-        scheme = Scheme(self.algorithm)
-
-        code = scheme.code(base)
-        decode = scheme.decode(code)
-
-        base = Image.fromarray(base.astype(np.uint8))
-        code = Image.fromarray(code.astype(np.uint8))
-        base = ImageTk.PhotoImage(base)
-        code = ImageTk.PhotoImage(code)
+        db_pictures = Db_pictures(self.rsa,self.img_resize.copy(),self.algorithm)    
+        db_pictures.create_pictures()
+        db_pictures.preparation_for_display()
 
         window = Toplevel(self.master)
+        window.title("show")
 
-        panelA = Label(window,image=base)
-        panelA.image = base
-        panelA.pack(side="left", padx=10, pady=10)
- 
-			# while the second panel will store the edge map
-        panelB = Label(window,image=base)
-        panelB.image = base
-        panelB.pack(side="right", padx=10, pady=10)
+        
+        for number, picture in enumerate(db_pictures.pictures):
+            Label(window, text="%s"%picture.title).grid(row=number,column=0, sticky=W+E)
+            Button(window, text='відобразити', command=partial(self.show_picture, picture.title, picture.display,window)).grid(row=number, column=1, sticky=W+E, pady=4)
+            Button(window, text='зберегти', command=partial(self.save_img, picture.title, picture.image)).grid(row=number, column=2, sticky=W+E, pady=4)
+        
+        Button(window, text='відобразити все', command=partial(self.show_all_pictures, db_pictures.pictures,window)).grid(row=0, column=3, sticky=W+E, pady=4)
+        Button(window, text='зберегти все', command=partial(self.save_all_images, db_pictures.pictures)).grid(row=1, column=3, sticky=W+E, pady=4)
 
+    def save_img(self, title, image):
+        image_uint8 = image.astype(np.uint8)
+        cv2.imwrite('%s-%s.jpg'%(title,self.select_method), image_uint8)
+        with open('%s-%s.txt'%(title,self.select_method),"w") as w_image:
+            for i in range(self.algorithm.height):
+                for j in range(self.algorithm.width):
+                    w_image.write("{} ".format(image_uint8[i][j]))
+                w_image.write("\n")
+
+    def save_all_images(self, pictures):
+        for picture in pictures:
+            self.save_img(picture.title,picture.image)
+    
+    def show_picture(self,title,display_image,window):
+        window_with_image = Toplevel(window)
+        window_with_image.title(title)
+        panel = Label(window_with_image,image=display_image)
+        panel.pack(padx=10, pady=10)
+    
+    def show_all_pictures(self, pictures,window):
+        for picture in pictures:
+            self.show_picture(picture.title,picture.display,window)
 
 
 if __name__ == "__main__":
     root = Tk()
+    root.title("image encoding")
     my_gui = GUI(root)
     root.mainloop()
