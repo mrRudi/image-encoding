@@ -1,5 +1,5 @@
 from tkinter.filedialog import askopenfilename
-from tkinter import Tk,Label,Button,Entry,W,Radiobutton,IntVar,E,Toplevel,StringVar,PhotoImage
+from tkinter import Tk,Label,Button,Entry,W,Radiobutton,IntVar,E,Toplevel,StringVar,PhotoImage,Scrollbar,Text,RIGHT,LEFT,Y,END
 import numpy as np
 import cv2
 from builder import Algorithm_first,Algorithm_second,Rsa,Scale
@@ -103,7 +103,30 @@ class GUI():
         
         self.create_button(window, partial(self.show_all_pictures, db_pictures.pictures,window), "show-all.png",40,0,3)
         self.create_button(window, partial(self.save_all_images, db_pictures.pictures), "save-all.png",40,1,3)
+        self.create_button(window, partial(self.delta_show, db_pictures.delta(),window), "delta.png",40,2,3)
         
+    def delta_show(self, delta,window):
+        window_delta = Toplevel(window)
+        message = """Похибки
+1)Обрахунки похибки a_ij - b_ij, коли a та b є дробовими числами
+Максимальна похибка між базовим і декодованим зображенням: {}
+Максимальна похибка між базовим і декодованим зображенням із зміною шкали: {}
+Сумарна похибка між базовим і декодованим зображенням: {}
+Сумарна похибка між базовим і декодованим зображенням із зміною шкали: {}
+1)Обрахунки похибки a_ij - b_ij, коли a та b є числами з шкали 0-255
+Максимальна похибка між базовим і декодованим зображенням: {}
+Максимальна похибка між базовим і декодованим зображенням із зміною шкали: {}
+Сумарна похибка між базовим і декодованим зображенням: {}
+Сумарна похибка між базовим і декодованим зображенням із зміною шкали: {}"""
+
+        S = Scrollbar(window_delta)
+        T = Text(window_delta)
+        S.pack(side=RIGHT, fill=Y)
+        T.pack(side=LEFT, fill=Y)
+        S.config(command=T.yview)
+        T.config(yscrollcommand=S.set)
+        T.insert(END, message.format(*delta))
+
     def create_button(self, master,comand,path_image,size,row,column):
         b = Button(master, command=comand)
         image = ImageTk.PhotoImage(Image.open(path_image).resize((size,size),Image.ANTIALIAS))
