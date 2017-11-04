@@ -1,6 +1,6 @@
 import cv2
 import numpy as np
-from builder import Rsa,Scale
+from .builder import Rsa,Scale
 from PIL import Image
 from PIL import ImageTk
 from collections import namedtuple

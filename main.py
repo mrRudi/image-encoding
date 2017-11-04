@@ -2,11 +2,15 @@ from tkinter.filedialog import askopenfilename
 from tkinter import Tk,Label,Button,Entry,W,Radiobutton,IntVar,E,Toplevel,StringVar,PhotoImage,Scrollbar,Text,RIGHT,LEFT,Y,END
 import numpy as np
 import cv2
-from builder import Algorithm_first,Algorithm_second,Rsa,Scale
-from db import Db_pictures
+from libs.builder import Algorithm_first,Algorithm_second,Rsa,Scale
+from libs.db import Db_pictures
 from functools import partial
 from PIL import Image
 from PIL import ImageTk
+
+
+def path_res(path):
+    return "data/res/"+path
 
 
 class GUI():
@@ -57,7 +61,7 @@ class GUI():
         # Button(self.master, text='зміна розміру', command=self.resize).grid(row=3, column=2, sticky=W+E, pady=4)
 		
         #обробка зображень
-        self.create_button(self.master, self.create_windows, "play.png",40,3,3)
+        self.create_button(self.master, self.create_windows, path_res("play.png"),40,3,3)
 
     def save_RSA(self):
         self.rsa = Rsa(int(self.p.get()),int(self.q.get()),int(self.e.get()),int(self.d.get()))
@@ -98,12 +102,12 @@ class GUI():
         
         for number, picture in enumerate(db_pictures.pictures):
             Label(window, text="%s"%picture.title).grid(row=number,column=0, sticky=W+E)
-            self.create_button(window, partial(self.show_picture, picture.title, picture.display,window), "show.png",40,number,1)
-            self.create_button(window, partial(self.save_img, picture.title, picture.image), "save.png",40,number,2)
+            self.create_button(window, partial(self.show_picture, picture.title, picture.display,window), path_res("show.png"),40,number,1)
+            self.create_button(window, partial(self.save_img, picture.title, picture.image), path_res("save.png"),40,number,2)
         
-        self.create_button(window, partial(self.show_all_pictures, db_pictures.pictures,window), "show-all.png",40,0,3)
-        self.create_button(window, partial(self.save_all_images, db_pictures.pictures), "save-all.png",40,1,3)
-        self.create_button(window, partial(self.delta_show, db_pictures.delta(),window), "delta.png",40,2,3)
+        self.create_button(window, partial(self.show_all_pictures, db_pictures.pictures,window), path_res("show-all.png"),40,0,3)
+        self.create_button(window, partial(self.save_all_images, db_pictures.pictures), path_res("save-all.png"),40,1,3)
+        self.create_button(window, partial(self.delta_show, db_pictures.delta(),window), path_res("delta.png"),40,2,3)
         
     def delta_show(self, delta,window):
         window_delta = Toplevel(window)
@@ -137,8 +141,8 @@ class GUI():
 
     def save_img(self, title, image):
         image_uint8 = image.astype(np.uint8)
-        cv2.imwrite('%s-%s.jpg'%(title,self.select_method), image_uint8)
-        with open('%s-%s.txt'%(title,self.select_method),"w") as w_image:
+        cv2.imwrite('result/%s-%s.jpg'%(title,self.select_method), image_uint8)
+        with open('result/%s-%s.txt'%(title,self.select_method),"w") as w_image:
             for i in range(self.algorithm.height):
                 for j in range(self.algorithm.width):
                     w_image.write("{} ".format(image_uint8[i][j]))
